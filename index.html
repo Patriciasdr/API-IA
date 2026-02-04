@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌙 App de Clima</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start; /* conteúdo começa no topo */
+      padding: 40px 20px;
+      color: #f0f0f0;
+      overflow-y: auto; /* agora dá pra rolar */
+      scroll-behavior: smooth;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background-size: 400% 400%;
+      animation: gradientFlow 10s ease infinite;
+    }
+
+    @keyframes gradientFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 25px;
+      padding: 40px 30px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      margin-bottom: 50px; /* espaço extra pro scroll */
+    }
+
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 60px rgba(0, 255, 255, 0.2);
+    }
+
+    h1 {
+      color: #ffffff;
+      font-size: 2rem;
+      margin-bottom: 25px;
+      text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    #cityInput {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: none;
+    }
+
+    #cityInput::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    #searchBtn {
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    #searchBtn:hover {
+      transform: scale(1.05);
+    }
+
+    .weather-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 25px;
+      margin-top: 20px;
+      animation: fadeIn 0.7s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .city-name {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #00d2ff;
+      margin-bottom: 10px;
+    }
+
+    .temperature {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #FFD166;
+      margin: 10px 0;
+      text-shadow: 0 0 10px rgba(255,209,102,0.5);
+    }
+
+    .details {
+      color: #ccc;
+      font-size: 1rem;
+      margin: 5px 0;
+    }
+
+    .loading {
+      color: #00e6e6;
+      font-size: 1.1rem;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.02); }
+    }
+
+    .error {
+      color: #ff7b7b;
+      background: rgba(255, 0, 0, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-weight: 500;
+      border-left: 3px solid #ff4b4b;
+    }
+
+    .hidden { display: none; }
+
+    footer {
+      margin-top: 25px;
+      color: #aaa;
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    .stars {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: transparent;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: twinkle 3s infinite ease-in-out alternate;
+    }
+
+    @keyframes twinkle {
+      0% { transform: scale(0.7); opacity: 0.5; }
+      100% { transform: scale(1.2); opacity: 1; }
+    }
+
+    #forecastDays div {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="container">
+    <h1>🌙 App de Clima</h1>
+    
+    <div class="search-box">
+      <input type="text" id="cityInput" placeholder="Digite o nome da cidade...">
+      <button id="searchBtn">Buscar</button>
+    </div>
+    
+    <div id="weatherCard" class="weather-card hidden">
+      <h2 id="cityName" class="city-name">-</h2>
+      <div id="temperature" class="temperature">-°C</div>
+      <p id="description" class="details">-</p>
+      <p id="wind" class="details">Vento: - km/h</p>
+    </div>
+
+    <!-- Previsão de 5 dias -->
+    <div id="forecast" class="weather-card hidden">
+      <h3>📅 Previsão para 5 dias</h3>
+      <div id="forecastDays" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+    </div>
+    
+    <div id="loading" class="loading hidden">Buscando dados...</div>
+    <div id="error" class="error hidden">Erro ao buscar dados</div>
+    
+    <footer>
+      <p>✨ Dados fornecidos pela Open-Meteo API</p>
+    </footer>
+  </div>
+
+  <script>
+    const cityInput = document.getElementById('cityInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const weatherCard = document.getElementById('weatherCard');
+    const loading = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const cityName = document.getElementById('cityName');
+    const temperature = document.getElementById('temperature');
+    const description = document.getElementById('description');
+    const wind = document.getElementById('wind');
+
+    const API_CONFIG = {
+      GEOCODING_URL: 'https://geocoding-api.open-meteo.com/v1/search',
+      WEATHER_URL: 'https://api.open-meteo.com/v1/forecast',
+      DEFAULT_CITY: 'São Paulo'
+    };
+
+    function initApp() {
+      searchBtn.addEventListener('click', handleSearch);
+      cityInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearch();
+      });
+      cityInput.value = API_CONFIG.DEFAULT_CITY;
+      handleSearch();
+    }
+
+    async function handleSearch() {
+      const city = cityInput.value.trim();
+      if (!city) {
+        showError('Digite o nome de uma cidade');
+        return;
+      }
+      showLoading();
+      hideError();
+      hideWeatherCard();
+
+      try {
+        const coords = await getCoordinates(city);
+        if (!coords) {
+          showError('Cidade não encontrada');
+          return;
+        }
+        const weather = await getWeather(coords.latitude, coords.longitude);
+        updateUI(coords.name, weather);
+      } catch (err) {
+        console.error('Erro:', err);
+        showError('Erro ao buscar dados. Tente novamente.');
+      }
+    }
+
+    async function getCoordinates(city) {
+      const url = `${API_CONFIG.GEOCODING_URL}?name=${encodeURIComponent(city)}&count=1&language=pt`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Erro na API de geolocalização');
+      const data = await response.json();
+      if (!data.results || data.results.length === 0) return null;
+      return {
+        name: data.results[0].name,
+        latitude: data.results[0].latitude,
+        longitude: data.results[0].longitude,
+      };
+    }
+
+    async function getWeather(lat, lon) {
+      const url = `${API_CONFIG.WEATHER_URL}?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Erro na API de clima');
+      return await response.json();
+    }
+
+    function updateUI(cityNameStr, weatherData) {
+      const current = weatherData.current_weather;
+      cityName.textContent = `${cityNameStr}`;
+      temperature.textContent = `${current.temperature}°C`;
+      description.textContent = getWeatherDescription(current.weathercode);
+      wind.textContent = `Vento: ${current.windspeed} km/h`;
+
+      hideLoading();
+      showWeatherCard();
+      showForecast(weatherData);
+    }
+
+    function showForecast(weatherData) {
+      const forecastDiv = document.getElementById('forecast');
+      const forecastDays = document.getElementById('forecastDays');
+      forecastDays.innerHTML = '';
+
+      const days = weatherData.daily;
+      const dates = days.time.slice(0, 5);
+
+      for (let i = 0; i < dates.length; i++) {
+        const dayCard = document.createElement('div');
+        dayCard.innerHTML = `
+          <p style="color:#00d2ff; font-weight:600;">${new Date(dates[i]).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</p>
+          <p>${getWeatherDescription(days.weathercode[i])}</p>
+          <p>🌡️ Máx: <strong style="color:#FFD166;">${days.temperature_2m_max[i]}°C</strong> | Mín: <strong style="color:#89CFF0;">${days.temperature_2m_min[i]}°C</strong></p>
+        `;
+        forecastDays.appendChild(dayCard);
+      }
+
+      forecastDiv.classList.remove('hidden');
+    }
+
+    function getWeatherDescription(code) {
+      const descriptions = {
+        0: '☀️ Céu limpo',
+        1: '🌤️ Principalmente limpo',
+        2: '⛅ Parcialmente nublado',
+        3: '☁️ Nublado',
+        45: '🌫️ Nevoeiro',
+        51: '🌦️ Chuvisco leve',
+        61: '🌧️ Chuva leve',
+        63: '🌧️ Chuva moderada',
+        65: '💦 Chuva forte',
+        80: '⛈️ Pancadas de chuva',
+        95: '⚡ Trovoada',
+      };
+      return descriptions[code] || `Condição: código ${code}`;
+    }
+
+    function showLoading() { loading.classList.remove('hidden'); }
+    function hideLoading() { loading.classList.add('hidden'); }
+    function showWeatherCard() { weatherCard.classList.remove('hidden'); }
+    function hideWeatherCard() { weatherCard.classList.add('hidden'); }
+    function showError(msg) { errorDiv.textContent = msg; errorDiv.classList.remove('hidden'); hideLoading(); }
+    function hideError() { errorDiv.classList.add('hidden'); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      createStars();
+    });
+
+    function createStars() {
+      const starsContainer = document.querySelector('.stars');
+      for (let i = 0; i < 40; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        const size = Math.random() * 3 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.animationDelay = `${Math.random() * 3}s`;
+        starsContainer.appendChild(star);
+      }
+    }
+  </script>
+</body>
+</html>
